@@ -6,10 +6,7 @@ class TILW_MapShapeComponentClass : ScriptComponentClass
 class TILW_MapShapeComponent : ScriptComponent
 {
 	
-	[Attribute("0 0 0 0.75", UIWidgets.ColorPicker, desc: "Color of the shape, you can also set transparency.", category: "Visualization")]
-	protected ref Color m_color;
-	
-	SCR_MapEntity m_mapEntity;
+	protected SCR_MapEntity m_mapEntity;
 	
 	[RplProp(onRplName: "OnPoints3DChange")]
 	protected ref array<vector> m_points3D = new array<vector>();
@@ -17,6 +14,10 @@ class TILW_MapShapeComponent : ScriptComponent
 	protected ref array<float> m_points2D_1 = new array<float>();
 	protected ref array<float> m_points2D_2 = new array<float>();
 	
+	// Parameters
+	
+	[Attribute("0 0 0 0.75", UIWidgets.ColorPicker, desc: "Color of the shape, you can also set transparency.", category: "Visualization")]
+	protected ref Color m_color;
 	
 	[Attribute("0", UIWidgets.Auto, "Invert the shape so it surrounds the polyline area.", category: "Visualization")]
 	protected bool m_invert;
@@ -65,6 +66,8 @@ class TILW_MapShapeComponent : ScriptComponent
 		
 		GetGame().GetCallqueue().Call(InitPoints);
 	}
+	
+	
 	
 	void SetFactions(array<FactionKey> factions)
 	{
@@ -214,13 +217,16 @@ class TILW_MapShapeComponent : ScriptComponent
 		return (sum > 0);
 	}
 	
-	CanvasWidget m_wCanvasWidget;
+	protected CanvasWidget m_wCanvasWidget;
 
 	protected ref PolygonDrawCommand m_drawPolygon1 = new PolygonDrawCommand();
 	protected ref PolygonDrawCommand m_drawPolygon2 = new PolygonDrawCommand();
 	protected ref array<ref CanvasWidgetCommand> m_drawCommands = null;
 	
-	void CreateMapWidget(MapConfiguration mapConfig)
+	protected vector m_previousPan;
+	protected float m_previousZoom;
+	
+	protected void CreateMapWidget(MapConfiguration mapConfig)
 	{
 		if (!IsVisible())
 			return;
@@ -245,17 +251,24 @@ class TILW_MapShapeComponent : ScriptComponent
 		}
 		
 		m_wCanvasWidget.SetDrawCommands(m_drawCommands);
-		
 		SetEventMask(GetOwner(), EntityEvent.POSTFRAME);
 	}
 	
-	void DeleteMapWidget(MapConfiguration mapConfig)
+	protected void DeleteMapWidget(MapConfiguration mapConfig)
 	{
+		m_drawCommands = null;
 		ClearEventMask(GetOwner(), EntityEvent.POSTFRAME);
 	}
 	
 	override void EOnPostFrame(IEntity owner, float timeSlice)
 	{
+		// Optimization: Return if the map did not move
+		if (m_previousPan == m_mapEntity.GetCurrentPan() && m_previousZoom == m_mapEntity.GetCurrentZoom())
+			return;
+		m_previousPan = m_mapEntity.GetCurrentPan();
+		m_previousZoom = m_mapEntity.GetCurrentZoom();
+		
+		// Update polygon 1
 		m_drawPolygon1.m_Vertices = new array<float>();
 		for (int i = 0; i < m_points2D_1.Count(); i += 2)
 		{
@@ -266,17 +279,18 @@ class TILW_MapShapeComponent : ScriptComponent
 			m_drawPolygon1.m_Vertices.Insert(screenY);
 		}
 		
-		if (m_invert)
+		if (!m_invert)
+			return;
+		
+		// Update polygon 2
+		m_drawPolygon2.m_Vertices = new array<float>();
+		for (int i = 0; i < m_points2D_2.Count(); i += 2)
 		{
-			m_drawPolygon2.m_Vertices = new array<float>();
-			for (int i = 0; i < m_points2D_2.Count(); i += 2)
-			{
-				float screenX, screenY;
-				m_mapEntity.WorldToScreen(m_points2D_2[i], m_points2D_2[i+1], screenX, screenY, true);
-				
-				m_drawPolygon2.m_Vertices.Insert(screenX);
-				m_drawPolygon2.m_Vertices.Insert(screenY);
-			}
+			float screenX, screenY;
+			m_mapEntity.WorldToScreen(m_points2D_2[i], m_points2D_2[i+1], screenX, screenY, true);
+			
+			m_drawPolygon2.m_Vertices.Insert(screenX);
+			m_drawPolygon2.m_Vertices.Insert(screenY);
 		}
 	}
 }
