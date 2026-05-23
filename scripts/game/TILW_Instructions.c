@@ -676,3 +676,51 @@ class TILW_ChangeWeatherInstruction : TILW_BaseInstruction
 		twm.ForceWeatherTo(!m_bAllowRandomChanges, m_sWeatherPresetName); // , m_fTransitionDuration / 60);
 	}
 }
+
+//! TILW_RandomFlagInstruction may set one flag according to a given likelyhood
+[BaseContainerProps(), BaseContainerCustomStringTitleField("Random Flag experiment")]
+class TILW_RandomFlagInstruction : TILW_BaseInstruction
+{
+	[Attribute("", UIWidgets.Auto, desc: "Mission Flag which might be set.")]
+	protected string m_flagName;
+	
+	[Attribute("0.5", UIWidgets.Auto, desc: "Chance that the flag gets set on framework initialization", params: "0 1 0.01")]
+	protected float m_chance;
+	
+	override void Execute()
+	{	
+		TILW_MissionFrameworkEntity mfe = TILW_MissionFrameworkEntity.GetInstance();
+		float f = Math.RandomFloat01();
+		if (mfe && m_chance >= f)
+			mfe.AdjustMissionFlag(m_flagName, true);
+	}
+}
+
+//! TILW_FlagSamplingInstruction is a random experimeent where k flags are randomly picked and set
+[BaseContainerProps(), BaseContainerCustomStringTitleField("Flag Sampling experiment")]
+class TILW_FlagSamplingInstruction : TILW_BaseInstruction
+{
+	[Attribute("", UIWidgets.Auto, desc: "Pool to draw k random mission flags from, and set them.")]
+	protected ref array<string> m_flagNames;
+	
+	[Attribute("1", UIWidgets.Auto, desc: "Number of flags to draw.", params: "1 inf")]
+	protected int m_k;
+	
+	[Attribute("0", UIWidgets.Auto, desc: "Can a single entry be selected multiple times? \nThis means that the number of set flags can also be less than k, since a single one may be drawn multiple times.")]
+	protected bool m_withReplacement;
+	
+	override void Execute()
+	{	
+		TILW_MissionFrameworkEntity mfe = TILW_MissionFrameworkEntity.GetInstance();
+		
+		for (int k = m_k; k > 0; k--)
+		{
+			if (m_flagNames.IsEmpty())
+				break;
+			string flag = m_flagNames.GetRandomElement();
+			if (!m_withReplacement)
+				m_flagNames.RemoveItem(flag);
+			mfe.AdjustMissionFlag(flag, true);
+		}
+	}
+}

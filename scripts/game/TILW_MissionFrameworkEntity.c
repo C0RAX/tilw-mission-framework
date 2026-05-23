@@ -559,7 +559,7 @@ class TILW_RandomFlag: TILW_BaseRandomFlag
 	[Attribute("", UIWidgets.Auto, desc: "Mission Flag which might be set.")]
 	protected string m_flagName;
 	
-	[Attribute("0.5", UIWidgets.Auto, desc: "Chance that the flag gets set on framework initialization", params: "0 1 0.05")]
+	[Attribute("0.5", UIWidgets.Auto, desc: "Chance that the flag gets set on framework initialization", params: "0 1 0.01")]
 	protected float m_chance;
 	
 	override void Evaluate()
@@ -577,7 +577,7 @@ class TILW_RandomFlag: TILW_BaseRandomFlag
 	}
 }
 
-//! TILW_RandomFlag is a simple Bernoulli trial, where a given mission flag has a given chance to be set
+//! TILW_FlagSamplingInstruction is a random experimeent where k flags are randomly picked and set
 [BaseContainerProps(), BaseContainerCustomStringTitleField("Flag Sampling")]
 class TILW_FlagSampling: TILW_BaseRandomFlag
 {
