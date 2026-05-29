@@ -179,7 +179,7 @@ class TILW_ManualJIPAvailable : SCR_AvailableActionCondition
 {
 	protected SCR_PlayerController pc;
 	
-	override bool IsAvailable(SCR_AvailableActionsConditionData data)
+	override bool IsAvailable(notnull SCR_AvailableActionsConditionData data)
 	{
 		if(!pc)
 		{
